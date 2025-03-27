@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template_string, jsonify, session
+from flask import Flask, request, render_template, jsonify, session
 from flask_session import Session
 import requests
 from prometheus_client import start_http_server
@@ -64,143 +64,7 @@ def list_metrics():
 # Rotas Flask
 @app.route("/", methods=["GET"])
 def welcome():
-    html_template = """
-    <!DOCTYPE html>
-    <html lang="pt-br">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Chatbot Observability</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                background-color: #f4f4f9;
-                color: #333;
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-            }
-            .container {
-                background: white;
-                padding: 2rem;
-                border-radius: 10px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                width: 100%;
-                max-width: 400px;
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-            }
-            .chat-window {
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                background: #f9f9f9;
-                padding: 1rem;
-                height: 300px;
-                overflow-y: auto;
-                font-size: 0.95rem;
-            }
-            .message {
-                margin-bottom: 1rem;
-            }
-            .user-message {
-                text-align: right;
-                color: #4CAF50;
-                font-weight: bold;
-            }
-            .bot-message {
-                text-align: left;
-                color: #555;
-            }
-            form {
-                display: flex;
-                gap: 0.5rem;
-            }
-            input[type="text"] {
-                flex: 1;
-                padding: 0.8rem;
-                font-size: 1rem;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-            }
-            button {
-                padding: 0.8rem;
-                font-size: 1rem;
-                font-weight: bold;
-                color: white;
-                background: #4CAF50;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: background 0.3s;
-            }
-            button:hover {
-                background: #45a049;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Chatbot Observability</h1>
-            <div class="chat-window" id="chatWindow"></div>
-            <form id="chatForm">
-                <input type="text" id="question" name="question" placeholder="Digite aqui..." required>
-                <button type="submit">Enviar</button>
-            </form>
-        </div>
-        <script>
-            const form = document.getElementById('chatForm');
-            const chatWindow = document.getElementById('chatWindow');
-
-            form.addEventListener('submit', function(event) {
-                event.preventDefault(); // Impede o envio tradicional do formulário
-                const question = document.getElementById('question').value;
-
-                // Adiciona a pergunta do usuário no chat
-                const userMessage = document.createElement('div');
-                userMessage.className = 'message user-message';
-                userMessage.textContent = question;
-                chatWindow.appendChild(userMessage);
-
-                // Faz a requisição ao servidor
-                fetch('/ask', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ question }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Adiciona a resposta do chatbot no chat
-                    const botMessage = document.createElement('div');
-                    botMessage.className = 'message bot-message';
-                    botMessage.textContent = data.answer;
-                    chatWindow.appendChild(botMessage);
-
-                    // Rola automaticamente para o final do chat
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                })
-                .catch(error => {
-                    const botMessage = document.createElement('div');
-                    botMessage.className = 'message bot-message';
-                    botMessage.textContent = "Erro ao processar a pergunta. Tente novamente.";
-                    chatWindow.appendChild(botMessage);
-
-                    console.error('Erro:', error);
-                });
-
-                // Limpa o campo de entrada
-                document.getElementById('question').value = '';
-            });
-        </script>
-    </body>
-    </html>
-    """
-    return render_template_string(html_template)
+    return render_template("index.html")
 
 @app.route("/metrics", methods=["GET"])
 def get_metrics():
@@ -226,23 +90,95 @@ def ask_question():
         session['conversation'].append({"role": "user", "content": user_input})
 
         # Contexto para o modelo Groq
-        context = """
-        Você é uma IA especializada em responder perguntas sobre métricas do Prometheus e Loki.
-        Sua função é interpretar o que o usuário pergunta, gerar as consultas necessárias para Prometheus ou Loki e fornecer respostas detalhadas com base nos resultados.
-        Se a consulta exigir um período específico (como 5 minutos, 1 hora, etc.), tente identificar o intervalo necessário. Caso contrário, considere usar o valor total acumulado.
-        """
-
+        
         context = (
-            "Você é uma IA especializada em responder perguntas sobre métricas do Prometheus e Loki."
-            "Sua função é interpretar o que o usuário pergunta, gerar as consultas necessárias para Prometheus ou Loki e "
-            " fornecer respostas detalhadas com base nos resultados."
-            "Se a consulta exigir um período específico (como 5 minutos, 1 hora, etc.), "
-            "tente identificar o intervalo necessário. "
-            " Caso contrário, considere usar o valor total acumulado."
-            "Considere as seguintes formas de extracao da informacao:"
-            "- definir escala de tempo (minutos=m, segundos=s,...)"
-            "- CPU as metricas disponiveis sao: nome1, nome2...."
-            "- Netowrk as metricas disponiveis sao: nome1, nome2...."
+            "Você é um Especialista em Métricas Prometheus, Logs Loki e Traces Tempo"
+
+            "Sua principal função é interpretar perguntas e solicitações sobre métricas (Prometheus), logs (Loki) e" 
+            "traces (Tempo), traduzindo-as em consultas precisas e fornecendo respostas detalhadas e acionáveis" 
+            "com base nos resultados obtidos."
+
+            "Objetivo Principal"
+            "- Auxiliar os usuários a acessar e entender dados específicos relacionados ao desempenho de" 
+            "sistemas, infraestrutura e eventos monitorados por Prometheus, Loki e Tempo."
+
+            "- Oferecer insights claros e explicativos com base nos dados extraídos das métricas, logs ou traces."
+
+            "Instruções"
+            "1. Criação de Consultas Dinâmicas"
+                "- Sempre que o usuário solicitar informações, interprete as perguntas e gere consultas" 
+                "específicas para:"
+                    "- Prometheus: Para métricas quantitativas e séries temporais."
+                    "- Loki: Para consultas baseadas em logs."
+                    "- Tempo: Para análise de traces (distribuição de eventos e latência)."
+
+            "2. Extração de Parâmetros do Prompt"
+                "- Sempre que possível, extraia os seguintes parâmetros do que o usuário informar:"
+                    "- Tipo de fonte de dados: Identifique se o usuário está solicitando dados de métricas" 
+                    "(Prometheus), logs (Loki) ou traces (Tempo)."
+                    "- Intervalo de tempo: Período de análise para métricas ou logs (e.g., últimos 5 minutos," 
+                    "1 hora, etc.)."
+                    "- Filtros adicionais: Exemplo: namespaces, pods, endpoints, ou identificadores específicos."
+
+            "3. Estruturação de Consultas"
+                "- Utilize a sintaxe adequada para cada sistema:"
+                    "- Prometheus: PromQL para métricas temporais."
+                    "- Loki: Filtros e expressões para logs."
+                    "- Tempo: Filtros e spans específicos para traces de latência."
+
+            "4. Análises e Respostas Detalhadas"
+                "- Após realizar a consulta, forneça:"
+                    "- Resumo dos Resultados: Apresente os dados ou logs de forma clara e legível."
+                    "- Análise Contextual: Explique o que os resultados significam para a performance ou" 
+                    "comportamento do sistema."
+                    "- Recomendações: Sugira ações corretivas ou melhorias, se aplicável."
+
+            "5. Recomendações e Ajustes"
+                "- Caso os parâmetros fornecidos pelo usuário sejam insuficientes, peça mais informações de maneira" 
+                "objetiva, como o intervalo de tempo desejado, o tipo de métrica, ou quaisquer filtros específicos."
+        
+            "Métricas Disponíveis por Categoria (Prometheus)"
+            "1. CPU:"
+                "- Métricas disponíveis: cpu_usage_seconds_total, node_cpu_seconds_total, process_cpu_seconds_total."
+
+            "2. Rede:"
+                "- Métricas disponíveis: node_network_receive_bytes_total, node_network_transmit_bytes_total," 
+                "node_network_receive_errors_total."
+
+            "3. Memória:"
+                "- Métricas disponíveis: node_memory_MemAvailable_bytes, node_memory_MemFree_bytes," 
+                "node_memory_Active_bytes."
+
+            "Logs (Loki):"
+            "- As consultas baseiam-se em padrões ou termos específicos, como:"
+                "- Identificar erros em um serviço: level=""error""."
+                "- Filtrar logs por namespace ou pod: {namespace=""example", "pod=""pod-name""}."
+
+            "Traces (Tempo)"
+            "- As análises de traces incluem spans e latências específicas:"
+                "- Identificar spans com maior tempo de execução."
+                "- Traçar dependências e gargalos em serviços distribuídos."
+
+            "Exemplo de Uso"
+            "1. Métricas (Prometheus)"
+                "- Pergunta: ""Quais foram os picos de uso de CPU nos últimos 10 minutos?" 
+                    "- Interprete o recurso (CPU) e o intervalo de tempo (10 minutos)."
+                    "- Construa uma consulta PromQL:"
+                    "max(rate(node_cpu_seconds_total[10m]))"
+                    "- Responda com os resultados, identificando os momentos de maior uso."
+
+            "2. Logs (Loki)"
+            "- Pergunta:" "Mostre todos os logs de erro do serviço X no namespace Y."
+                "- Construa uma consulta Loki:"
+                "{namespace=""Y"", service=""X""} |= ""error"
+                "- Filtre os resultados e resuma os logs encontrados."
+
+            "3.Traces (Tempo)"
+            "Pergunta:" "Quais spans apresentam a maior latência em um serviço específico?"
+                "- Filtre por spans e latências no Tempo, identificando os gargalos principais."
+
+            "Seja claro e objetivo ao gerar consultas e interpretar os resultados. Certifique-se de alinhar as" 
+            "respostas às necessidades do usuário e às especificidades do Prometheus, Loki e Tempo."
         )
 
         # Variáveis para consulta

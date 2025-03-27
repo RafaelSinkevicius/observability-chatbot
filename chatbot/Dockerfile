@@ -1,6 +1,7 @@
 # Dockerfile para chatbot
 FROM python:3.10-slim
 
+COPY . /app
 WORKDIR /app
 
 COPY requirements.txt .
